@@ -16,7 +16,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract complete recovered source
         working-directory: .
-        run: unzip -q Field-Notes-0.3.9-SOURCE-PENDING-CLOUD-BUILD.zip
+        run: |
+          unzip -q Field-Notes-0.3.9-SOURCE-PENDING-CLOUD-BUILD.zip
+          sed -i 's/\r$//' source/*.sh
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
