@@ -24,6 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: android-actions/setup-android@v4
       - name: Install cloud Android dependencies
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - name: Install cloud browser test dependencies
