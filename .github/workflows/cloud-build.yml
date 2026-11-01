@@ -1,0 +1,69 @@
+name: Android source build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    defaults:
+      run:
+        working-directory: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract complete recovered source
+        working-directory: .
+        run: unzip -q Field-Notes-0.3.9-SOURCE-PENDING-CLOUD-BUILD.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install cloud Android dependencies
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Install cloud browser test dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Regression tests
+        env:
+          FIELD_NOTES_BROWSER_TESTS: '1'
+        run: bash verify.sh
+      - name: Restore signing key from Actions secrets
+        env:
+          KEY_B64: ${{ secrets.FIELD_NOTES_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEY_B64" ]; then
+            umask 077
+            printf '%s' "$KEY_B64" | base64 --decode > "$RUNNER_TEMP/field-notes.p12"
+            echo "FIELD_NOTES_KEYSTORE=$RUNNER_TEMP/field-notes.p12" >> "$GITHUB_ENV"
+          fi
+      - name: Compile resources and Java, then verify APK
+        env:
+          FIELD_NOTES_STORE_PASSWORD: ${{ secrets.FIELD_NOTES_STORE_PASSWORD || 'android' }}
+          FIELD_NOTES_KEY_PASSWORD: ${{ secrets.FIELD_NOTES_KEY_PASSWORD || 'android' }}
+          FIELD_NOTES_KEY_ALIAS: ${{ secrets.FIELD_NOTES_KEY_ALIAS || 'androiddebugkey' }}
+        run: bash build.sh
+      - name: Record source provenance
+        if: always()
+        run: |
+          mkdir -p build
+          git rev-parse HEAD > build/SOURCE-COMMIT.txt
+          java -version 2> build/java-version.txt
+          node --version > build/node-version.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Field-Notes-0.3.9-build-and-evidence
+          retention-days: 30
+          path: |
+            source/build/aligned.apk
+            source/build/Field-Notes-Android-0.3.9.apk
+            source/build/*.txt
+            source/build/qa/
+            source/build/browser-qa/
