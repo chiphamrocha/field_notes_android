@@ -17,7 +17,7 @@ jobs:
       - name: Extract complete recovered source
         working-directory: .
         run: |
-          unzip -q Field-Notes-0.3.9-SOURCE-PENDING-CLOUD-BUILD.zip
+          unzip -q Field-Notes-Android-0.3.10-Source.zip
           sed -i 's/\r$//' source/*.sh
       - uses: actions/setup-java@v4
         with:
@@ -62,11 +62,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Field-Notes-0.3.9-build-and-evidence
+          name: Field-Notes-0.3.10-build-and-evidence
           retention-days: 30
           path: |
             source/build/aligned.apk
-            source/build/Field-Notes-Android-0.3.9.apk
+            source/build/Field-Notes-Android-0.3.10.apk
             source/build/*.txt
             source/build/qa/
             source/build/browser-qa/
